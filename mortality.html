@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mortality Rate</title>
+    <link rel="stylesheet" href="/Static/mortality.css" />
+    <link rel="stylesheet" href="/Static/styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+  </head>
+  <body>
+    <div class="header">
+      <div class="header-left">
+        <a href="index.html">
+          <img
+            src="/static/population census logo.png"
+            alt="Censalyze Logo"
+            class="logo"
+          />
+        </a>
+        <h1>Mortality Rate</h1>
+      </div>
+      <div class="header-buttons">
+        <div id="auth-section">
+          <!-- This will be filled by JS based on auth state -->
+        </div>
+        <a href="add-edit-data.html" class="add-edit-button">Add/Edit Data</a>
+      </div>
+    </div>
+
+    <div class="container">
+      <h2>Data Gallery</h2>
+      <div id="map" style="height: 600px; width: 100%"></div>
+    </div>
+
+    <script src="options.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", async function () {
+        const map = L.map("map", {
+          center: [20.5937, 78.9629],
+          zoom: 5,
+          zoomControl: true,
+          preferCanvas: true,
+        });
+
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution: "&copy; OpenStreetMap contributors",
+          maxZoom: 18,
+        }).addTo(map);
+
+        try {
+          const res = await fetch("http://localhost:5000/mortalityrate");
+          const data = await res.json();
+
+          if (!Array.isArray(data)) throw new Error("Invalid data format");
+
+          const values = data.map((entry) => entry.value);
+          const min = Math.min(...values);
+          const max = Math.max(...values);
+          const normalize = (v) =>
+            max - min === 0 ? 0.5 : (v - min) / (max - min);
+
+          const heatData = data.map((entry) => [
+            entry.latitude,
+            entry.longitude,
+            normalize(entry.value),
+          ]);
+
+          L.heatLayer(heatData, {
+            radius: 25,
+            blur: 15,
+            maxZoom: 10,
+            minOpacity: 0.4,
+          }).addTo(map);
+        } catch (error) {
+          console.error("Error fetching mortalityrate data:", error);
+          alert("Failed to load mortalityrate data");
+        }
+      });
+    </script>
+  </body>
+</html>
